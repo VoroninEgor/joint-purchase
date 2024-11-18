@@ -6,3 +6,10 @@ spring:
     url: jdbc:postgresql://localhost:5433/joint-purchase
     username: postgres
     password: postgres
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+
+server:
+  port: 8081
