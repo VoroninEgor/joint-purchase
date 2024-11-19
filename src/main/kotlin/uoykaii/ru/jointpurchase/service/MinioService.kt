@@ -41,12 +41,15 @@ class MinioService(val minioClient: MinioClient) {
         }
     }
 
-    fun download(id: String): ByteArray = minioClient.getObject(
+    fun download(id: String): ByteArray {
+        println("Поход в minio за: $id")
+        return minioClient.getObject(
             GetObjectArgs.builder()
                 .bucket(BUCKET_NAME)
                 .`object`(id)
                 .build()
         ).readBytes()
+    }
 
 
     companion object {

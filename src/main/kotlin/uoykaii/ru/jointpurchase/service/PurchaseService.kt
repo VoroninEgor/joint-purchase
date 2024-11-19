@@ -2,11 +2,7 @@ package uoykaii.ru.jointpurchase.service
 
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
-import uoykaii.ru.jointpurchase.dto.purchase.PurchaseCreateRequest
-import uoykaii.ru.jointpurchase.dto.purchase.PurchaseCreateResponse
-import uoykaii.ru.jointpurchase.dto.purchase.PurchasePreviewResponse
-import uoykaii.ru.jointpurchase.dto.purchase.PurchasePreviewsListResponse
-import uoykaii.ru.jointpurchase.entity.Image
+import uoykaii.ru.jointpurchase.dto.purchase.*
 import uoykaii.ru.jointpurchase.entity.Purchase
 import uoykaii.ru.jointpurchase.repository.PurchaseRepository
 import uoykaii.ru.jointpurchase.util.ImageOwnerType
@@ -18,7 +14,8 @@ import kotlin.jvm.optionals.getOrElse
 @Service
 class PurchaseService(
     private val purchaseRepository: PurchaseRepository,
-    private val imageService: ImageService
+    private val imageService: ImageService,
+    private val itemService: ItemService
 ) {
 
     @Transactional
@@ -44,7 +41,8 @@ class PurchaseService(
     }
 
     fun publish(id: UUID) {
-        val purchase = purchaseRepository.findById(id).getOrElse { throw IllegalArgumentException("Ошибка публикации закупки $id, не найдено") }
+        val purchase = purchaseRepository.findById(id)
+            .getOrElse { throw IllegalArgumentException("Ошибка публикации закупки $id, не найдено") }
 
         purchase.apply {
             status = PurchaseStatus.PUBLISHED
@@ -54,10 +52,38 @@ class PurchaseService(
         }
     }
 
-    fun getAllPreviews(): PurchasePreviewsListResponse {
+    fun getPreviewsByStatus(status: PurchaseStatus? = null): PurchasePreviewsListResponse {
         val previews: MutableList<PurchasePreviewResponse> = mutableListOf()
-        purchaseRepository.findAll().forEach{
-            previews.add(PurchasePreviewResponse(
+
+        val purchases = if (status == null) purchaseRepository.findAll() else purchaseRepository.findAllByStatus(status)
+
+        purchases.forEach {
+            previews.add(
+                PurchasePreviewResponse(
+                    id = it.id!!,
+                    name = it.name,
+                    moneyGoal = it.moneyGoal,
+                    collectedMoney = it.collectedMoney,
+                    organizationalFee = it.organizationalFee,
+                    stopDate = it.stopDate,
+                    deliveryMethod = it.deliveryMethod,
+                    paymentMethod = it.paymentMethod,
+                    status = it.status,
+                    createdDate = it.createdDate,
+                    publishedDate = it.publishedDate,
+                    imageId = imageService.getDownloadId(it.image!!)
+                )
+            )
+        }
+        return PurchasePreviewsListResponse(previews)
+    }
+
+    fun getById(id: UUID): PurchaseResponse {
+        val purchase =
+            purchaseRepository.findById(id).getOrElse { throw IllegalArgumentException("нет такой закупки: $id") }
+        print("возврат purchaseResponse для: $purchase")
+        return purchase.let {
+            PurchaseResponse(
                 id = it.id!!,
                 name = it.name,
                 moneyGoal = it.moneyGoal,
@@ -69,10 +95,10 @@ class PurchaseService(
                 status = it.status,
                 createdDate = it.createdDate,
                 publishedDate = it.publishedDate,
-                imageId = imageService.getDownloadId(it.image!!)
-            ))
+                imageId = imageService.getDownloadId(it.image!!),
+                itemsPreviews = itemService.getPreviewsByPurchase(it)
+            )
         }
-        return PurchasePreviewsListResponse(previews)
     }
 
 }

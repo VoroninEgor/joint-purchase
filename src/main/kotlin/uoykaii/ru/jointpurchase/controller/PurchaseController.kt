@@ -4,11 +4,11 @@ import org.springframework.web.bind.annotation.*
 import uoykaii.ru.jointpurchase.dto.purchase.PurchaseCreateRequest
 import uoykaii.ru.jointpurchase.dto.purchase.PurchaseCreateResponse
 import uoykaii.ru.jointpurchase.dto.purchase.PurchasePreviewsListResponse
+import uoykaii.ru.jointpurchase.dto.purchase.PurchaseResponse
 import uoykaii.ru.jointpurchase.service.PurchaseService
-import java.util.UUID
+import java.util.*
 
 @RestController
-@CrossOrigin(origins = ["http://127.0.0.1:5500"])
 @RequestMapping("/purchase")
 class PurchaseController(val purchaseService: PurchaseService) {
 
@@ -22,15 +22,22 @@ class PurchaseController(val purchaseService: PurchaseService) {
     }
 
     @PutMapping("/publish/{id}")
-    fun publish(@PathVariable id:UUID) {
+    fun publish(@PathVariable id: UUID) {
         println("Завершение создания закупки: $id ...")
         purchaseService.publish(id)
     }
 
     @GetMapping("/preview")
     fun getPreviews(): PurchasePreviewsListResponse {
-        val allPreviews = purchaseService.getAllPreviews()
+        val allPreviews = purchaseService.getPreviewsByStatus()
         println("Возврат превью закупок:$allPreviews ")
         return allPreviews
+    }
+
+    @GetMapping("/{id}")
+    fun getById(@PathVariable id: UUID): PurchaseResponse {
+        val purchase: PurchaseResponse = purchaseService.getById(id)
+        println("Возврат инфы о закупке: $purchase")
+        return purchase
     }
 }
