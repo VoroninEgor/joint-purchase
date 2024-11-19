@@ -1,5 +1,7 @@
 package uoykaii.ru.jointpurchase.service
 
+import io.minio.GetObjectArgs
+import io.minio.GetObjectResponse
 import io.minio.MinioClient
 import io.minio.PutObjectArgs
 import org.springframework.stereotype.Service
@@ -38,6 +40,14 @@ class MinioService(val minioClient: MinioClient) {
             }
         }
     }
+
+    fun download(id: String): ByteArray = minioClient.getObject(
+            GetObjectArgs.builder()
+                .bucket(BUCKET_NAME)
+                .`object`(id)
+                .build()
+        ).readBytes()
+
 
     companion object {
         const val BUCKET_NAME = "images"

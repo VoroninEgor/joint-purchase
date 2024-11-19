@@ -1,7 +1,7 @@
 package uoykaii.ru.jointpurchase.controller
 
 import org.springframework.web.bind.annotation.*
-import uoykaii.ru.jointpurchase.dto.ItemCreateRequest
+import uoykaii.ru.jointpurchase.dto.item.ItemCreateRequest
 import uoykaii.ru.jointpurchase.service.ItemService
 
 @RestController
