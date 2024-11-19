@@ -54,10 +54,10 @@ class PurchaseService(
         }
     }
 
-    fun getPreviews(): PurchasePreviewsListResponse {
-        val previews: List<PurchasePreviewResponse> = listOf()
+    fun getAllPreviews(): PurchasePreviewsListResponse {
+        val previews: MutableList<PurchasePreviewResponse> = mutableListOf()
         purchaseRepository.findAll().forEach{
-            PurchasePreviewResponse(
+            previews.add(PurchasePreviewResponse(
                 id = it.id!!,
                 name = it.name,
                 moneyGoal = it.moneyGoal,
@@ -70,7 +70,7 @@ class PurchaseService(
                 createdDate = it.createdDate,
                 publishedDate = it.publishedDate,
                 imageId = imageService.getDownloadId(it.image!!)
-            )
+            ))
         }
         return PurchasePreviewsListResponse(previews)
     }

@@ -29,7 +29,8 @@ class PurchaseController(val purchaseService: PurchaseService) {
 
     @GetMapping("/preview")
     fun getPreviews(): PurchasePreviewsListResponse {
-        println("Возврат превью закупок...")
-        return purchaseService.getPreviews()
+        val allPreviews = purchaseService.getAllPreviews()
+        println("Возврат превью закупок:$allPreviews ")
+        return allPreviews
     }
 }
