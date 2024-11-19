@@ -21,12 +21,6 @@ class PurchaseController(val purchaseService: PurchaseService) {
         return purchaseService.create(purchaseCreateRequest)
     }
 
-    @PutMapping("/publish/{id}")
-    fun publish(@PathVariable id: UUID) {
-        println("Завершение создания закупки: $id ...")
-        purchaseService.publish(id)
-    }
-
     @GetMapping("/preview")
     fun getPreviews(): PurchasePreviewsListResponse {
         val allPreviews = purchaseService.getPreviewsByStatus()
@@ -39,5 +33,17 @@ class PurchaseController(val purchaseService: PurchaseService) {
         val purchase: PurchaseResponse = purchaseService.getById(id)
         println("Возврат инфы о закупке: $purchase")
         return purchase
+    }
+
+    @PutMapping("/publish/{id}")
+    fun publish(@PathVariable id: UUID) {
+        println("Завершение создания закупки: $id ...")
+        purchaseService.publish(id)
+    }
+
+    @PutMapping("/stop/{id}")
+    fun stop(@PathVariable id: UUID) {
+        println("Стоп закупки: $id ...")
+        purchaseService.stop(id)
     }
 }

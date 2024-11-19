@@ -7,9 +7,9 @@ import uoykaii.ru.jointpurchase.entity.Purchase
 import uoykaii.ru.jointpurchase.repository.PurchaseRepository
 import uoykaii.ru.jointpurchase.util.ImageOwnerType
 import uoykaii.ru.jointpurchase.util.PurchaseStatus
+import uoykaii.ru.jointpurchase.util.purchaseCanBeStopped
 import java.time.LocalDateTime
 import java.util.*
-import kotlin.jvm.optionals.getOrElse
 
 @Service
 class PurchaseService(
@@ -42,14 +42,14 @@ class PurchaseService(
 
     fun publish(id: UUID) {
         val purchase = purchaseRepository.findById(id)
-            .getOrElse { throw IllegalArgumentException("Ошибка публикации закупки $id, не найдено") }
+            .orElseThrow { throw IllegalArgumentException("Ошибка публикации закупки $id, не найдено") }
 
-        purchase.apply {
-            status = PurchaseStatus.PUBLISHED
-            publishedDate = LocalDateTime.now()
-        }.also {
-            purchaseRepository.save(purchase)
-        }
+        purchaseRepository.save(
+            purchase.apply {
+                status = PurchaseStatus.PUBLISHED
+                publishedDate = LocalDateTime.now()
+            }
+        )
     }
 
     fun getPreviewsByStatus(status: PurchaseStatus? = null): PurchasePreviewsListResponse {
@@ -71,6 +71,7 @@ class PurchaseService(
                     status = it.status,
                     createdDate = it.createdDate,
                     publishedDate = it.publishedDate,
+                    canBeStopped = purchaseCanBeStopped(it.stopDate),
                     imageId = imageService.getDownloadId(it.image!!)
                 )
             )
@@ -80,7 +81,7 @@ class PurchaseService(
 
     fun getById(id: UUID): PurchaseResponse {
         val purchase =
-            purchaseRepository.findById(id).getOrElse { throw IllegalArgumentException("нет такой закупки: $id") }
+            purchaseRepository.findById(id).orElseThrow { throw IllegalArgumentException("нет такой закупки: $id") }
         print("возврат purchaseResponse для: $purchase")
         return purchase.let {
             PurchaseResponse(
@@ -95,10 +96,22 @@ class PurchaseService(
                 status = it.status,
                 createdDate = it.createdDate,
                 publishedDate = it.publishedDate,
+                canBeStopped = purchaseCanBeStopped(it.stopDate),
                 imageId = imageService.getDownloadId(it.image!!),
                 itemsPreviews = itemService.getPreviewsByPurchase(it)
             )
         }
     }
 
+    fun stop(id: UUID) {
+        val purchase = purchaseRepository.findById(id)
+            .orElseThrow { throw IllegalArgumentException("ошибка стопа, закупка: $id не найден") }
+
+        if (purchaseCanBeStopped(purchase.stopDate)) {
+            purchase.status = PurchaseStatus.AWAITING_INVOICE
+            purchaseRepository.save(purchase)
+        } else {
+            throw IllegalArgumentException("нельзя стопнуть закупку: $id")
+        }
+    }
 }

@@ -25,7 +25,7 @@ class ItemService(
     fun create(itemCreatRequest: ItemCreateRequest) {
         val purchaseById = purchaseRepository
             .findById(itemCreatRequest.purchaseId)
-            .getOrElse { throw IllegalArgumentException("Не существует закупки: ${itemCreatRequest.purchaseId}") }
+            .orElseThrow { throw IllegalArgumentException("Не существует закупки: ${itemCreatRequest.purchaseId}") }
         val item: Item = Item().apply {
             id = UUID.randomUUID()
             name = itemCreatRequest.name

@@ -17,6 +17,7 @@ data class PurchaseResponse(
     val status: PurchaseStatus?,
     val createdDate: LocalDateTime?,
     val publishedDate: LocalDateTime?,
+    val canBeStopped: Boolean,
     val imageId: String,
     val itemsPreviews: ItemPreviewsListResponse
 )
