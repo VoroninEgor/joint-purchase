@@ -1,11 +1,9 @@
 package uoykaii.ru.jointpurchase.controller
 
 import org.springframework.web.bind.annotation.*
-import uoykaii.ru.jointpurchase.dto.purchase.PurchaseCreateRequest
-import uoykaii.ru.jointpurchase.dto.purchase.PurchaseCreateResponse
-import uoykaii.ru.jointpurchase.dto.purchase.PurchasePreviewsListResponse
-import uoykaii.ru.jointpurchase.dto.purchase.PurchaseResponse
+import uoykaii.ru.jointpurchase.dto.purchase.*
 import uoykaii.ru.jointpurchase.service.PurchaseService
+import uoykaii.ru.jointpurchase.util.PurchaseStatus
 import java.util.*
 
 @RestController
@@ -22,8 +20,10 @@ class PurchaseController(val purchaseService: PurchaseService) {
     }
 
     @GetMapping("/preview")
-    fun getPreviews(): PurchasePreviewsListResponse {
-        val allPreviews = purchaseService.getPreviewsByStatus()
+    fun getPreviews(
+         @RequestParam(required = false) status: PurchaseStatus?
+    ): PurchasePreviewsListResponse {
+        val allPreviews = purchaseService.getPreviewsByStatus(status)
         println("Возврат превью закупок:$allPreviews ")
         return allPreviews
     }
@@ -45,5 +45,11 @@ class PurchaseController(val purchaseService: PurchaseService) {
     fun stop(@PathVariable id: UUID) {
         println("Стоп закупки: $id ...")
         purchaseService.stop(id)
+    }
+
+    @PutMapping("/extend/{id}")
+    fun extend(@PathVariable id: UUID, @RequestBody request: PurchaseExtendRequest) {
+        println("Продление закупки $id")
+        purchaseService.extend(id, request)
     }
 }

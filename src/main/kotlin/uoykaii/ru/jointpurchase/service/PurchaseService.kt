@@ -33,23 +33,20 @@ class PurchaseService(
             createdDate = LocalDateTime.now()
         }.also { purchaseRepository.save(it) }
 
-        purchaseCreateRequest.run {
-            imageService.upload(image, purchase.id!!, ImageOwnerType.PURCHASE)
-        }
+        imageService.upload(purchaseCreateRequest.image, purchase.id!!, ImageOwnerType.PURCHASE)
 
         return PurchaseCreateResponse(purchase.id!!)
     }
 
+    @Transactional
     fun publish(id: UUID) {
         val purchase = purchaseRepository.findById(id)
             .orElseThrow { throw IllegalArgumentException("Ошибка публикации закупки $id, не найдено") }
 
-        purchaseRepository.save(
-            purchase.apply {
-                status = PurchaseStatus.PUBLISHED
-                publishedDate = LocalDateTime.now()
-            }
-        )
+        purchase.apply {
+            status = PurchaseStatus.PUBLISHED
+            publishedDate = LocalDateTime.now()
+        }
     }
 
     fun getPreviewsByStatus(status: PurchaseStatus? = null): PurchasePreviewsListResponse {
@@ -103,15 +100,27 @@ class PurchaseService(
         }
     }
 
+    @Transactional
     fun stop(id: UUID) {
         val purchase = purchaseRepository.findById(id)
             .orElseThrow { throw IllegalArgumentException("ошибка стопа, закупка: $id не найден") }
 
         if (purchaseCanBeStopped(purchase.stopDate)) {
             purchase.status = PurchaseStatus.AWAITING_INVOICE
-            purchaseRepository.save(purchase)
         } else {
             throw IllegalArgumentException("нельзя стопнуть закупку: $id")
+        }
+    }
+
+    @Transactional
+    fun extend(id: UUID, request: PurchaseExtendRequest) {
+        val purchase = purchaseRepository.findById(id)
+            .orElseThrow { throw IllegalArgumentException("ошибка продления, закупка: $id не найден") }
+
+        if (purchase.stopDate == null || purchase.stopDate!!.isBefore(request.stopDate)) {
+            purchase.stopDate = request.stopDate
+        } else {
+            throw IllegalArgumentException("нельзя продлить закупку: $id")
         }
     }
 }
