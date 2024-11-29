@@ -22,21 +22,4 @@ open class Image {
     @OneToOne
     @JoinColumn(name = "purchase_id")
     open var purchase: Purchase? = null
-
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Image) return false
-
-        if (id != other.id) return false
-        if (item != other.item) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = id?.hashCode() ?: 0
-        result = 31 * result + (item?.hashCode() ?: 0)
-        return result
-    }
 }

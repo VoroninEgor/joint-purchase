@@ -68,7 +68,7 @@ class PurchaseService(
                     status = it.status,
                     createdDate = it.createdDate,
                     publishedDate = it.publishedDate,
-                    canBeStopped = purchaseCanBeStopped(it.stopDate),
+                    canBeStopped = purchaseCanBeStopped(it.stopDate, it.status),
                     imageId = imageService.getDownloadId(it.image!!)
                 )
             )
@@ -93,7 +93,7 @@ class PurchaseService(
                 status = it.status,
                 createdDate = it.createdDate,
                 publishedDate = it.publishedDate,
-                canBeStopped = purchaseCanBeStopped(it.stopDate),
+                canBeStopped = purchaseCanBeStopped(it.stopDate, it.status),
                 imageId = imageService.getDownloadId(it.image!!),
                 itemsPreviews = itemService.getPreviewsByPurchase(it)
             )
@@ -105,11 +105,10 @@ class PurchaseService(
         val purchase = purchaseRepository.findById(id)
             .orElseThrow { throw IllegalArgumentException("ошибка стопа, закупка: $id не найден") }
 
-        if (purchaseCanBeStopped(purchase.stopDate)) {
-            purchase.status = PurchaseStatus.AWAITING_INVOICE
-        } else {
-            throw IllegalArgumentException("нельзя стопнуть закупку: $id")
+        if (!purchaseCanBeStopped(purchase.stopDate, purchase.status)) {
+                throw IllegalArgumentException("нельзя стопнуть закупку: $id")
         }
+        purchase.status = PurchaseStatus.AWAITING_INVOICE
     }
 
     @Transactional
