@@ -6,6 +6,7 @@ import uoykaii.ru.jointpurchase.dto.purchase.*
 import uoykaii.ru.jointpurchase.entity.Purchase
 import uoykaii.ru.jointpurchase.repository.PurchaseRepository
 import uoykaii.ru.jointpurchase.util.ImageOwnerType
+import uoykaii.ru.jointpurchase.util.OrderStatus
 import uoykaii.ru.jointpurchase.util.PurchaseStatus
 import uoykaii.ru.jointpurchase.util.purchaseCanBeStopped
 import java.time.LocalDateTime
@@ -106,9 +107,14 @@ class PurchaseService(
             .orElseThrow { throw IllegalArgumentException("ошибка стопа, закупка: $id не найден") }
 
         if (!purchaseCanBeStopped(purchase.stopDate, purchase.status)) {
-                throw IllegalArgumentException("нельзя стопнуть закупку: $id")
+            throw IllegalArgumentException("нельзя стопнуть закупку: $id")
         }
         purchase.status = PurchaseStatus.AWAITING_INVOICE
+        purchase.items.forEach { item ->
+            item.orders.forEach { order ->
+                order.status = OrderStatus.AWAITING_INVOICE
+            }
+        }
     }
 
     @Transactional

@@ -1,5 +1,6 @@
 package uoykaii.ru.jointpurchase.controller
 
+import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
 import uoykaii.ru.jointpurchase.dto.purchase.*
 import uoykaii.ru.jointpurchase.service.PurchaseService
@@ -12,7 +13,7 @@ class PurchaseController(val purchaseService: PurchaseService) {
 
     @PostMapping(consumes = ["multipart/form-data"])
     fun create(
-        @ModelAttribute purchaseCreateRequest: PurchaseCreateRequest
+        @Valid @ModelAttribute purchaseCreateRequest: PurchaseCreateRequest
     ): PurchaseCreateResponse {
         println("Создание закупки...")
         println(purchaseCreateRequest)
@@ -21,7 +22,7 @@ class PurchaseController(val purchaseService: PurchaseService) {
 
     @GetMapping("/preview")
     fun getPreviews(
-         @RequestParam(required = false) status: PurchaseStatus?
+        @RequestParam(required = false) status: PurchaseStatus?
     ): PurchasePreviewsListResponse {
         val allPreviews = purchaseService.getPreviewsByStatus(status)
         println("Возврат превью закупок:$allPreviews ")

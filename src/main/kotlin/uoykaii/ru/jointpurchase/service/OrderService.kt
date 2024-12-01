@@ -28,17 +28,26 @@ class OrderService(
     fun create(request: OrderCreateRequest): OrderCreateResponse {
         val itemById = itemRepository.findById(request.itemId)
             .orElseThrow { throw IllegalArgumentException("Нет товара ${request.itemId}") }
-        val order = Order().apply {
-            id = UUID.randomUUID()
-            status = OrderStatus.NEW
-            count = request.count
-            item = itemById
-            createdDate = LocalDateTime.now()
+
+        val existingOrder =
+            itemById.orders.firstOrNull { true } //todo сделать проверку на наличие заказа такого товара у юзера
+
+        val order = existingOrder?.apply {
+            count = (count ?: 0) + request.count
         }
-        orderRepository.save(order).also {
-            itemById.purchase!!.collectedMoney += itemById.price * request.count
-            return OrderCreateResponse(it.id!!)
-        }
+            ?: Order().apply {
+                id = UUID.randomUUID()
+                status = OrderStatus.NEW
+                count = request.count
+                item = itemById
+                createdDate = LocalDateTime.now()
+            }
+
+        orderRepository.save(order)
+
+        itemById.purchase!!.collectedMoney += itemById.price * request.count
+
+        return OrderCreateResponse(order.id!!)
     }
 
     fun getAllByStatus(status: OrderStatus? = null): OrderListResponse {
@@ -72,6 +81,7 @@ class OrderService(
         if (!canEditOrder(order.status)) {
             throw IllegalArgumentException("Заказ не доступен для удаления")
         }
+        order.item!!.purchase!!.collectedMoney -= order.count!! * order.item!!.price
         orderRepository.delete(order)
     }
 
@@ -81,6 +91,14 @@ class OrderService(
         if (!canEditOrder(order.status)) {
             throw IllegalArgumentException("Заказ не доступен для изменения")
         }
-        order.count = request.count
+
+        val countChange = if (request.isAdding) 1 else -1
+        val updatedCount = (order.count ?: 0) + countChange
+
+        if (updatedCount < 1) {
+            throw IllegalArgumentException("Количество товара в заказе не может быть меньше 1")
+        }
+
+        order.item!!.purchase!!.collectedMoney += countChange * order.item!!.price
     }
 }
