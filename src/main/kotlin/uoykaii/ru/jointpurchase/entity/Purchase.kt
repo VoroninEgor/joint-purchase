@@ -29,4 +29,8 @@ open class Purchase {
 
     @OneToMany(mappedBy = "purchase")
     open var items: MutableList<Item> = mutableListOf()
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    open var user: User? = null
 }

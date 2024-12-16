@@ -21,4 +21,8 @@ open class Order {
     @JoinColumn(name = "item_id")
     open var item: Item? = null
 
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    open var user: User? = null
+
 }

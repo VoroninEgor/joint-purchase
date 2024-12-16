@@ -1,10 +1,16 @@
 package uoykaii.ru.jointpurchase.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
+import uoykaii.ru.jointpurchase.client.AuthenticationClient
 import uoykaii.ru.jointpurchase.dto.purchase.*
 import uoykaii.ru.jointpurchase.entity.Purchase
+import uoykaii.ru.jointpurchase.exception.AuthenticationException
+import uoykaii.ru.jointpurchase.exception.EntityNotFoundException
 import uoykaii.ru.jointpurchase.repository.PurchaseRepository
+import uoykaii.ru.jointpurchase.repository.UserRepository
+import uoykaii.ru.jointpurchase.security.user
 import uoykaii.ru.jointpurchase.util.ImageOwnerType
 import uoykaii.ru.jointpurchase.util.OrderStatus
 import uoykaii.ru.jointpurchase.util.PurchaseStatus
@@ -12,15 +18,21 @@ import uoykaii.ru.jointpurchase.util.purchaseCanBeStopped
 import java.time.LocalDateTime
 import java.util.*
 
+private val logger = KotlinLogging.logger {}
+
 @Service
 class PurchaseService(
     private val purchaseRepository: PurchaseRepository,
     private val imageService: ImageService,
-    private val itemService: ItemService
+    private val itemService: ItemService,
+    private val userRepository: UserRepository,
+    private val authenticationClient: AuthenticationClient
 ) {
 
     @Transactional
     fun create(purchaseCreateRequest: PurchaseCreateRequest): PurchaseCreateResponse {
+        val userByEmail = userRepository.findByEmail(user.email) ?: throw EntityNotFoundException("User not founded")
+
         val purchase: Purchase = Purchase().apply {
             id = UUID.randomUUID()
             name = purchaseCreateRequest.name
@@ -32,6 +44,7 @@ class PurchaseService(
             paymentMethod = purchaseCreateRequest.paymentMethod
             status = PurchaseStatus.DRAFT
             createdDate = LocalDateTime.now()
+            user = userByEmail
         }.also { purchaseRepository.save(it) }
 
         imageService.upload(purchaseCreateRequest.image, purchase.id!!, ImageOwnerType.PURCHASE)
@@ -42,7 +55,9 @@ class PurchaseService(
     @Transactional
     fun publish(id: UUID) {
         val purchase = purchaseRepository.findById(id)
-            .orElseThrow { throw IllegalArgumentException("Ошибка публикации закупки $id, не найдено") }
+            .orElseThrow { throw EntityNotFoundException("Purchase with id: $id not founded") }
+
+        if (purchase.user?.email != user.email) throw AuthenticationException("U can't publish purchase with id: $id")
 
         purchase.apply {
             status = PurchaseStatus.PUBLISHED
@@ -50,10 +65,18 @@ class PurchaseService(
         }
     }
 
-    fun getPreviewsByStatus(status: PurchaseStatus? = null): PurchasePreviewsListResponse {
+    fun getPreviewsByStatus(status: PurchaseStatus, token: String): PurchasePreviewsListResponse {
         val previews: MutableList<PurchasePreviewResponse> = mutableListOf()
 
-        val purchases = if (status == null) purchaseRepository.findAll() else purchaseRepository.findAllByStatus(status)
+        val purchases = purchaseRepository.findAllByStatus(status)
+        if (token != "") {
+            val userId = authenticationClient.getUserByToken(token).uuid
+            val user = userRepository.findById(UUID.fromString(userId))
+                .orElseThrow { EntityNotFoundException("User with id: $userId not founded") }
+            purchaseRepository.findAllByStatusAndUser(status, user) // todo
+        }
+
+        logger.info { "getting previews for $purchases" }
 
         purchases.forEach {
             previews.add(

@@ -7,12 +7,14 @@ import uoykaii.ru.jointpurchase.dto.item.ItemPreviewResponse
 import uoykaii.ru.jointpurchase.dto.item.ItemPreviewsListResponse
 import uoykaii.ru.jointpurchase.entity.Item
 import uoykaii.ru.jointpurchase.entity.Purchase
+import uoykaii.ru.jointpurchase.exception.AuthenticationException
+import uoykaii.ru.jointpurchase.exception.EntityNotFoundException
 import uoykaii.ru.jointpurchase.repository.ItemRepository
 import uoykaii.ru.jointpurchase.repository.PurchaseRepository
+import uoykaii.ru.jointpurchase.security.user
 import uoykaii.ru.jointpurchase.util.ImageOwnerType
 import java.time.LocalDateTime
 import java.util.*
-import kotlin.jvm.optionals.getOrElse
 
 @Service
 class ItemService(
@@ -25,7 +27,12 @@ class ItemService(
     fun create(itemCreatRequest: ItemCreateRequest) {
         val purchaseById = purchaseRepository
             .findById(itemCreatRequest.purchaseId)
-            .orElseThrow { throw IllegalArgumentException("Не существует закупки: ${itemCreatRequest.purchaseId}") }
+            .orElseThrow { throw EntityNotFoundException("Purchase with id: ${itemCreatRequest.purchaseId} not exist") }
+
+        if (purchaseById.user?.email != user.email) {
+            throw AuthenticationException("U can't create item for purchase with id: ${itemCreatRequest.purchaseId}")
+        }
+
         val item: Item = Item().apply {
             id = UUID.randomUUID()
             name = itemCreatRequest.name

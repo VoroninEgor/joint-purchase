@@ -10,6 +10,17 @@ spring:
     show-sql: true
     hibernate:
       ddl-auto: update
-
 server:
   port: 8081
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /docs/swagger-ui
+
+grpc:
+  client:
+    auth:
+      address: localhost:9098
+      negotiation-type: plaintext

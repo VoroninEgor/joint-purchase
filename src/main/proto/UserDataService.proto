@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package ru.uoykaii.security.user;
+
+option java_package = "ru.uoykaii.security.user";
+option java_multiple_files = true;
+
+service UserDataService {
+    rpc getUserDataByJwt(GetUserDataJwtRequest) returns (UserDataResponse);
+}
+
+message GetUserDataJwtRequest {
+    string jwt = 1;
+}
+
+message UserDataResponse {
+    string uuid = 1;
+    string email = 2;
+    string firstName = 3;
+    string lastName = 4;
+    UserAuthority authority = 5;
+}
+
+enum UserAuthority {
+    USER = 0;
+    ORGANIZER = 1;
+}
